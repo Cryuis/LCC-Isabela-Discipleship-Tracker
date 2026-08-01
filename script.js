@@ -140,11 +140,23 @@ async function fetchPeople() {
 }
 
 const positions = new Map();
+const renderedNodeIds = new Set();
 let viewOffset = { x: 0, y: 0 };
 let interactionState = null;
 
+function getDisciplers(person) {
+  if (Array.isArray(person.disciplers)) {
+    return person.disciplers.filter(Boolean);
+  }
+  return person.discipler ? [person.discipler] : [];
+}
+
 function getDefaultRootName() {
-  return people.find((p) => !p.discipler && p.name !== 'National Office')?.name || "Melchor Cavero";
+  return (
+    people.find(
+      (p) => getDisciplers(p).length === 0 && p.name !== "National Office",
+    )?.name || "Melchor Cavero"
+  );
 }
 
 function findPersonByName(name) {
@@ -159,8 +171,8 @@ function getDepth(person) {
   let depth = 0;
   let current = person;
 
-  while (current.discipler) {
-    const parent = findPersonByName(current.discipler);
+  while (getDisciplers(current).length > 0) {
+    const parent = findPersonByName(getDisciplers(current)[0]);
     if (!parent || parent.id === current.id) {
       break;
     }
@@ -174,7 +186,7 @@ function getDepth(person) {
 
 function getSiblingIndex(person) {
   const siblings = people.filter(
-    (candidate) => candidate.discipler === person.discipler,
+    (candidate) => getDisciplers(candidate)[0] === getDisciplers(person)[0],
   );
   return siblings.findIndex((candidate) => candidate.id === person.id);
 }
@@ -201,17 +213,17 @@ function buildTree() {
     person.children = [];
   });
 
-  const rootPeople = people.filter((person) => !person.discipler);
+  const rootPeople = people.filter(
+    (person) => getDisciplers(person).length === 0,
+  );
 
   people.forEach((person) => {
-    if (!person.discipler) {
-      return;
-    }
-
-    const parent = findPersonByName(person.discipler);
-    if (parent) {
-      parent.children.push(person);
-    }
+    getDisciplers(person).forEach((disciplerName) => {
+      const parent = findPersonByName(disciplerName);
+      if (parent && parent.id !== person.id) {
+        parent.children.push(person);
+      }
+    });
   });
 
   return rootPeople;
@@ -268,6 +280,9 @@ function renderTree() {
   applyViewportTransform(content);
   canvas.appendChild(content);
 
+  positions.clear();
+  renderedNodeIds.clear();
+
   const roots = buildTree();
 
   roots.forEach((person) => {
@@ -278,9 +293,15 @@ function renderTree() {
 }
 
 function renderPerson(person, parent) {
+  if (renderedNodeIds.has(person.id)) {
+    return;
+  }
+  renderedNodeIds.add(person.id);
+
   const node = document.createElement("article");
   const isNO = person.name === 'National Office';
-  node.className = `tree-node${!person.discipler ? " is-root" : ""}${isNO ? " is-national-office" : ""}`;
+  const disciplers = getDisciplers(person);
+  node.className = `tree-node${disciplers.length === 0 ? " is-root" : ""}${isNO ? " is-national-office" : ""}`;
   node.dataset.id = person.id;
 
   const position = getPosition(person);
@@ -296,13 +317,13 @@ function renderPerson(person, parent) {
   const rolePill = document.createElement("span");
   rolePill.className = "meta-pill";
   rolePill.textContent =
-    person.role || (person.discipler ? "Disciple" : "Pastor");
+    person.role || (disciplers.length ? "Disciple" : "Pastor");
   meta.appendChild(rolePill);
 
-  if (person.discipler) {
+  if (disciplers.length) {
     const disciplerPill = document.createElement("span");
     disciplerPill.className = "meta-pill";
-    disciplerPill.textContent = `Discipler: ${person.discipler}`;
+    disciplerPill.textContent = `Discipler: ${disciplers.join(", ")}`;
     meta.appendChild(disciplerPill);
   }
 
@@ -340,23 +361,38 @@ function renderPerson(person, parent) {
 }
 
 function populateDisciplerOptions() {
-  const select = document.getElementById("disciplerInput");
-  select.innerHTML = "";
-
-  const defaultRootName = getDefaultRootName();
-  const option = document.createElement("option");
-  option.value = "";
-  option.textContent = "Pastor / no discipler";
-  select.appendChild(option);
+  const container = document.getElementById("disciplerOptions");
+  container.innerHTML = "";
 
   people.forEach((person) => {
-    const optionItem = document.createElement("option");
-    optionItem.value = person.name;
-    optionItem.textContent = person.name;
-    select.appendChild(optionItem);
+    const chip = document.createElement("label");
+    chip.className = "module-chip";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.name = "discipler";
+    cb.value = person.name;
+
+    const span = document.createElement("span");
+    span.textContent = person.name;
+
+    chip.appendChild(cb);
+    chip.appendChild(span);
+    container.appendChild(chip);
   });
 
-  select.value = defaultRootName;
+  const defaultRootName = getDefaultRootName();
+  container.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+    if (cb.value === defaultRootName) {
+      cb.checked = true;
+    }
+  });
+}
+
+function getCheckedDisciplers(container) {
+  return Array.from(
+    container.querySelectorAll('input[type="checkbox"]:checked'),
+  ).map((cb) => cb.value);
 }
 
 function openModal() {
@@ -390,8 +426,7 @@ async function handleSubmit(event) {
     mobileNumber: data.get("mobileNumber").toString().trim(),
     lccFileNo: data.get("lccFileNo").toString().trim(),
     series: data.get("series").toString().trim(),
-    discipler:
-      data.get("discipler").toString().trim() || getDefaultRootName(),
+    disciplers: getCheckedDisciplers(document.getElementById("disciplerOptions")),
     role: "Disciple",
     modules: collectModules(document.getElementById("moduleOptions")),
   };
@@ -420,7 +455,7 @@ async function handleSubmit(event) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: discipleName,
-        discipler: personName,
+        disciplers: [personName],
         role: "Disciple",
         modules: {},
       }),

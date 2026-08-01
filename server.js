@@ -54,6 +54,23 @@ async function seed() {
       { $set: { status: 'approved' } },
     );
 
+  const missingDisciplers = await db
+    .collection('people')
+    .find({ disciplers: { $exists: false } })
+    .toArray();
+  for (const doc of missingDisciplers) {
+    await db
+      .collection('people')
+      .updateOne(
+        { _id: doc._id },
+        {
+          $set: {
+            disciplers: doc.discipler && doc.discipler !== '' ? [doc.discipler] : [],
+          },
+        },
+      );
+  }
+
   const count = await db.collection('people').countDocuments();
   if (count === 0) {
     await db.collection('people').insertMany([
@@ -68,6 +85,7 @@ async function seed() {
         lccFileNo: '',
         series: '',
         discipler: '',
+        disciplers: [],
         role: 'National Office',
         modules: {},
         status: 'approved',
@@ -83,6 +101,7 @@ async function seed() {
         lccFileNo: '',
         series: '',
         discipler: 'National Office',
+        disciplers: ['National Office'],
         role: 'Pastor',
         modules: { 'Unleash your Life': { dateStarted: '', dateCompleted: '' } },
         status: 'approved',
@@ -98,6 +117,7 @@ async function seed() {
         lccFileNo: '',
         series: '',
         discipler: 'Melchor Cavero',
+        disciplers: ['Melchor Cavero'],
         role: 'Disciple',
         modules: { 'First Step': { dateStarted: '', dateCompleted: '' } },
         status: 'approved',
@@ -105,6 +125,22 @@ async function seed() {
     ]);
     console.log('Seeded initial data');
   }
+}
+
+function normalizeDisciplers(value, fallback) {
+  if (Array.isArray(value)) {
+    return [
+      ...new Set(
+        value
+          .map((item) => (item == null ? '' : String(item).trim()))
+          .filter(Boolean),
+      ),
+    ];
+  }
+  if (typeof value === 'string' && value.trim()) {
+    return [value.trim()];
+  }
+  return Array.isArray(fallback) ? fallback.filter(Boolean) : [];
 }
 
 function hashPassword(password, salt) {
@@ -243,6 +279,7 @@ app.post('/api/people', async (req, res) => {
       lccFileNo,
       series,
       discipler,
+      disciplers,
       role,
       modules,
       status,
@@ -257,7 +294,8 @@ app.post('/api/people', async (req, res) => {
       mobileNumber: mobileNumber || '',
       lccFileNo: lccFileNo || '',
       series: series || '',
-      discipler: discipler || '',
+      discipler: normalizeDisciplers(disciplers, discipler)[0] || '',
+      disciplers: normalizeDisciplers(disciplers, discipler),
       role: role || 'Disciple',
       modules: modules && typeof modules === 'object' ? modules : {},
       status: status === 'approved' || status === 'declined' ? status : 'pending',
@@ -282,9 +320,11 @@ app.put('/api/people/:id', requireAdmin, async (req, res) => {
       lccFileNo,
       series,
       discipler,
+      disciplers,
       role,
       modules,
     } = req.body;
+    const normalizedDisciplers = normalizeDisciplers(disciplers, discipler);
     const update = {
       $set: {
         name,
@@ -295,7 +335,8 @@ app.put('/api/people/:id', requireAdmin, async (req, res) => {
         mobileNumber: mobileNumber || '',
         lccFileNo: lccFileNo || '',
         series: series || '',
-        discipler: discipler || '',
+        discipler: normalizedDisciplers[0] || '',
+        disciplers: normalizedDisciplers,
         role: role || 'Disciple',
         modules: modules && typeof modules === 'object' ? modules : {},
       },
@@ -334,8 +375,8 @@ app.delete('/api/people/:id', requireAdmin, async (req, res) => {
     await database
       .collection('people')
       .updateMany(
-        { discipler: person.name },
-        { $set: { discipler: '' } },
+        { disciplers: person.name },
+        { $pull: { disciplers: person.name } },
       );
     res.json({ ok: true });
   } catch (err) {
