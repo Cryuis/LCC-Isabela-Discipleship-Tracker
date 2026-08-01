@@ -11,53 +11,41 @@ const DB_NAME = 'discipleship';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_SALT = process.env.ADMIN_SALT;
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret';
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
 let db;
-const sessions = new Map();
+let client;
 
-function verifyPassword(password) {
-  if (!ADMIN_SALT || !ADMIN_PASSWORD_HASH) {
-    return false;
+async function getDb() {
+  if (db) {
+    return db;
   }
-  const hash = crypto.scryptSync(String(password), ADMIN_SALT, 64).toString('hex');
-  return crypto.timingSafeEqual(
-    Buffer.from(hash, 'hex'),
-    Buffer.from(ADMIN_PASSWORD_HASH, 'hex'),
-  );
-}
-
-function createSession() {
-  const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = Date.now() + 8 * 60 * 60 * 1000;
-  sessions.set(token, { expiresAt });
-  return token;
-}
-
-function requireAdmin(req, res, next) {
-  const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  const session = token ? sessions.get(token) : null;
-
-  if (!session || session.expiresAt < Date.now()) {
-    if (token) {
-      sessions.delete(token);
-    }
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (!MONGO_URI) {
+    throw new Error('MONGO_URI is not configured');
   }
-
-  session.expiresAt = Date.now() + 8 * 60 * 60 * 1000;
-  next();
-}
-
-async function connectDB() {
-  const client = new MongoClient(MONGO_URI);
+  client = new MongoClient(MONGO_URI);
   await client.connect();
   db = client.db(DB_NAME);
   console.log('Connected to MongoDB');
+  await seed();
+  return db;
+}
+
+async function seed() {
+  const adminCount = await db.collection('admins').countDocuments();
+  if (adminCount === 0 && ADMIN_USERNAME && ADMIN_SALT && ADMIN_PASSWORD_HASH) {
+    await db.collection('admins').insertOne({
+      username: ADMIN_USERNAME,
+      salt: ADMIN_SALT,
+      passwordHash: ADMIN_PASSWORD_HASH,
+    });
+    console.log(`Seeded admin account: ${ADMIN_USERNAME}`);
+  }
 
   const count = await db.collection('people').countDocuments();
   if (count === 0) {
@@ -70,30 +58,91 @@ async function connectDB() {
   }
 }
 
-app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
-  if (username === ADMIN_USERNAME && verifyPassword(password)) {
-    return res.json({ token: createSession() });
-  }
-  res.status(401).json({ error: 'Invalid credentials' });
-});
+function hashPassword(password, salt) {
+  return crypto.scryptSync(String(password), salt, 64).toString('hex');
+}
 
-app.post('/api/logout', requireAdmin, (req, res) => {
+function createSession(username) {
+  const issuedAt = Date.now();
+  const payload = `${username}.${issuedAt}`;
+  const signature = crypto
+    .createHmac('sha256', SESSION_SECRET)
+    .update(payload)
+    .digest('hex');
+  return `${payload}.${signature}`;
+}
+
+function getSessionUser(token) {
+  if (!token) {
+    return null;
+  }
+  const parts = String(token).split('.');
+  if (parts.length !== 3) {
+    return null;
+  }
+  const [username, issuedAtStr, signature] = parts;
+  const expected = crypto
+    .createHmac('sha256', SESSION_SECRET)
+    .update(`${username}.${issuedAtStr}`)
+    .digest('hex');
+  if (
+    signature.length !== expected.length ||
+    !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+  ) {
+    return null;
+  }
+  const issuedAt = Number(issuedAtStr);
+  if (!Number.isFinite(issuedAt) || Date.now() - issuedAt > SESSION_TTL_MS) {
+    return null;
+  }
+  return username;
+}
+
+function requireAdmin(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (token) {
-    sessions.delete(token);
+  const username = getSessionUser(token);
+  if (!username) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
+  req.sessionUser = username;
+  next();
+}
+
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const database = await getDb();
+    const admin = await database.collection('admins').findOne({ username });
+    if (!admin) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    const hash = hashPassword(password, admin.salt);
+    const valid = crypto.timingSafeEqual(
+      Buffer.from(hash, 'hex'),
+      Buffer.from(admin.passwordHash, 'hex'),
+    );
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    return res.json({ token: createSession(admin.username) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/logout', requireAdmin, (_req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/me', requireAdmin, (_req, res) => {
-  res.json({ username: ADMIN_USERNAME });
+app.get('/api/me', requireAdmin, (req, res) => {
+  res.json({ username: req.sessionUser });
 });
 
 app.get('/api/people', async (_req, res) => {
   try {
-    const people = await db.collection('people').find({}).toArray();
+    const database = await getDb();
+    const people = await database.collection('people').find({}).toArray();
     res.json(people);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -102,6 +151,7 @@ app.get('/api/people', async (_req, res) => {
 
 app.post('/api/people', requireAdmin, async (req, res) => {
   try {
+    const database = await getDb();
     const { name, discipler, role, modules } = req.body;
     const doc = {
       id: crypto.randomUUID(),
@@ -110,7 +160,7 @@ app.post('/api/people', requireAdmin, async (req, res) => {
       role: role || 'Disciple',
       modules: modules || [],
     };
-    const result = await db.collection('people').insertOne(doc);
+    const result = await database.collection('people').insertOne(doc);
     res.status(201).json({ ...doc, _id: result.insertedId });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -119,6 +169,7 @@ app.post('/api/people', requireAdmin, async (req, res) => {
 
 app.put('/api/people/:id', requireAdmin, async (req, res) => {
   try {
+    const database = await getDb();
     const { name, discipler, role, modules } = req.body;
     const update = {
       $set: {
@@ -128,13 +179,13 @@ app.put('/api/people/:id', requireAdmin, async (req, res) => {
         modules: modules || [],
       },
     };
-    const result = await db
+    const result = await database
       .collection('people')
       .updateOne({ id: req.params.id }, update);
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: 'Person not found' });
     }
-    const person = await db
+    const person = await database
       .collection('people')
       .findOne({ id: req.params.id });
     res.json(person);
@@ -145,7 +196,8 @@ app.put('/api/people/:id', requireAdmin, async (req, res) => {
 
 app.delete('/api/people/:id', requireAdmin, async (req, res) => {
   try {
-    const person = await db.collection('people').findOne({ id: req.params.id });
+    const database = await getDb();
+    const person = await database.collection('people').findOne({ id: req.params.id });
     if (!person) {
       return res.status(404).json({ error: 'Person not found' });
     }
@@ -153,12 +205,12 @@ app.delete('/api/people/:id', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Cannot delete National Office' });
     }
 
-    const result = await db.collection('people').deleteOne({ id: req.params.id });
+    const result = await database.collection('people').deleteOne({ id: req.params.id });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Person not found' });
     }
 
-    await db
+    await database
       .collection('people')
       .updateMany(
         { discipler: person.name },
@@ -170,8 +222,12 @@ app.delete('/api/people/:id', requireAdmin, async (req, res) => {
   }
 });
 
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+if (require.main === module) {
+  getDb().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
   });
-});
+}
+
+module.exports = app;
