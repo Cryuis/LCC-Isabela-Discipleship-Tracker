@@ -50,9 +50,48 @@ async function seed() {
   const count = await db.collection('people').countDocuments();
   if (count === 0) {
     await db.collection('people').insertMany([
-      { id: crypto.randomUUID(), name: 'National Office', discipler: '', role: 'National Office', modules: [] },
-      { id: crypto.randomUUID(), name: 'Melchor Cavero', discipler: 'National Office', role: 'Pastor', modules: ['Unleash Your Life'] },
-      { id: crypto.randomUUID(), name: 'John Doe', discipler: 'Melchor Cavero', role: 'Disciple', modules: ['First Step'] },
+      {
+        id: crypto.randomUUID(),
+        name: 'National Office',
+        address: '',
+        bday: '',
+        age: '',
+        civilStatus: '',
+        mobileNumber: '',
+        lccFileNo: '',
+        series: '',
+        discipler: '',
+        role: 'National Office',
+        modules: {},
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Melchor Cavero',
+        address: '',
+        bday: '',
+        age: '',
+        civilStatus: '',
+        mobileNumber: '',
+        lccFileNo: '',
+        series: '',
+        discipler: 'National Office',
+        role: 'Pastor',
+        modules: { 'Unleash your Life': { dateStarted: '', dateCompleted: '' } },
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'John Doe',
+        address: '',
+        bday: '',
+        age: '',
+        civilStatus: '',
+        mobileNumber: '',
+        lccFileNo: '',
+        series: '',
+        discipler: 'Melchor Cavero',
+        role: 'Disciple',
+        modules: { 'First Step': { dateStarted: '', dateCompleted: '' } },
+      },
     ]);
     console.log('Seeded initial data');
   }
@@ -149,16 +188,35 @@ app.get('/api/people', async (_req, res) => {
   }
 });
 
-app.post('/api/people', requireAdmin, async (req, res) => {
+app.post('/api/people', async (req, res) => {
   try {
     const database = await getDb();
-    const { name, discipler, role, modules } = req.body;
+    const {
+      name,
+      address,
+      bday,
+      age,
+      civilStatus,
+      mobileNumber,
+      lccFileNo,
+      series,
+      discipler,
+      role,
+      modules,
+    } = req.body;
     const doc = {
       id: crypto.randomUUID(),
       name,
+      address: address || '',
+      bday: bday || '',
+      age: age || '',
+      civilStatus: civilStatus || '',
+      mobileNumber: mobileNumber || '',
+      lccFileNo: lccFileNo || '',
+      series: series || '',
       discipler: discipler || '',
       role: role || 'Disciple',
-      modules: modules || [],
+      modules: modules && typeof modules === 'object' ? modules : {},
     };
     const result = await database.collection('people').insertOne(doc);
     res.status(201).json({ ...doc, _id: result.insertedId });
@@ -170,13 +228,32 @@ app.post('/api/people', requireAdmin, async (req, res) => {
 app.put('/api/people/:id', requireAdmin, async (req, res) => {
   try {
     const database = await getDb();
-    const { name, discipler, role, modules } = req.body;
+    const {
+      name,
+      address,
+      bday,
+      age,
+      civilStatus,
+      mobileNumber,
+      lccFileNo,
+      series,
+      discipler,
+      role,
+      modules,
+    } = req.body;
     const update = {
       $set: {
         name,
+        address: address || '',
+        bday: bday || '',
+        age: age || '',
+        civilStatus: civilStatus || '',
+        mobileNumber: mobileNumber || '',
+        lccFileNo: lccFileNo || '',
+        series: series || '',
         discipler: discipler || '',
         role: role || 'Disciple',
-        modules: modules || [],
+        modules: modules && typeof modules === 'object' ? modules : {},
       },
     };
     const result = await database

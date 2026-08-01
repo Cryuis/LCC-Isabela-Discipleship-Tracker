@@ -66,34 +66,94 @@
             <h2>Add a person</h2>
           </div>
           <form id="personForm" class="form-grid">
-            <label>
-              <span>Name</span>
-              <input
-                id="nameInput"
-                name="name"
-                type="text"
-                required
-                placeholder="e.g. John Doe"
-              />
-            </label>
+            <div class="form-row">
+              <label>
+                <span>Name</span>
+                <input
+                  id="nameInput"
+                  name="name"
+                  type="text"
+                  required
+                  placeholder="e.g. John Doe"
+                />
+              </label>
 
-            <label>
-              <span>Discipler</span>
-              <select id="disciplerInput" name="discipler"></select>
-            </label>
+              <label>
+                <span>Address (optional)</span>
+                <input
+                  name="address"
+                  type="text"
+                  placeholder="e.g. Santiago City"
+                />
+              </label>
+            </div>
 
-            <label>
-              <span>Role</span>
-              <select id="roleInput" name="role">
-                <option value="Disciple">Disciple</option>
-                <option value="Pastor">Pastor</option>
-                <option value="National Office">National Office</option>
-              </select>
-            </label>
+            <div class="form-row">
+              <label>
+                <span>Birthday</span>
+                <input name="bday" type="date" />
+              </label>
 
-            <fieldset>
-              <legend>Modules completed</legend>
-              <div id="moduleOptions" class="module-options"></div>
+              <label>
+                <span>Age</span>
+                <input name="age" type="number" min="0" max="150" />
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label>
+                <span>Civil Status</span>
+                <select name="civilStatus">
+                  <option value="">Select…</option>
+                  <option>Single</option>
+                  <option>Married</option>
+                  <option>Widowed</option>
+                  <option>Separated</option>
+                  <option>Engaged</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Mobile Number</span>
+                <input
+                  name="mobileNumber"
+                  type="tel"
+                  placeholder="e.g. 0917 123 4567"
+                />
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label>
+                <span>LCC File No. (optional)</span>
+                <input name="lccFileNo" type="text" />
+              </label>
+
+              <label>
+                <span>Series (optional)</span>
+                <input name="series" type="text" />
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label>
+                <span>Discipler</span>
+                <select id="disciplerInput" name="discipler"></select>
+              </label>
+
+              <label>
+                <span>Role</span>
+                <select id="roleInput" name="role">
+                  <option value="Disciple">Disciple</option>
+                  <option value="Pastor">Pastor</option>
+                  <option value="National Office">National Office</option>
+                </select>
+              </label>
+            </div>
+
+            <fieldset class="modules-fieldset">
+              <legend>Modules</legend>
+              <div id="moduleOptions" class="module-groups"></div>
             </fieldset>
 
             <div class="form-actions">
@@ -146,28 +206,80 @@
         </div>
 
         <form id="editForm" class="form-grid">
-          <label>
-            <span>Name</span>
-            <input id="editNameInput" name="name" type="text" required />
-          </label>
+          <div class="form-row">
+            <label>
+              <span>Name</span>
+              <input id="editNameInput" name="name" type="text" required />
+            </label>
 
-          <label>
-            <span>Discipler</span>
-            <select id="editDisciplerInput" name="discipler"></select>
-          </label>
+            <label>
+              <span>Address (optional)</span>
+              <input id="editAddressInput" name="address" type="text" />
+            </label>
+          </div>
 
-          <label>
-            <span>Role</span>
-            <select id="editRoleInput" name="role">
-              <option value="Disciple">Disciple</option>
-              <option value="Pastor">Pastor</option>
-              <option value="National Office">National Office</option>
-            </select>
-          </label>
+          <div class="form-row">
+            <label>
+              <span>Birthday</span>
+              <input id="editBdayInput" name="bday" type="date" />
+            </label>
 
-          <fieldset>
-            <legend>Modules completed</legend>
-            <div id="editModuleOptions" class="module-options"></div>
+            <label>
+              <span>Age</span>
+              <input id="editAgeInput" name="age" type="number" min="0" max="150" />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              <span>Civil Status</span>
+              <select id="editCivilStatusInput" name="civilStatus">
+                <option value="">Select…</option>
+                <option>Single</option>
+                <option>Married</option>
+                <option>Widowed</option>
+                <option>Separated</option>
+                <option>Engaged</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Mobile Number</span>
+              <input id="editMobileInput" name="mobileNumber" type="tel" />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              <span>LCC File No. (optional)</span>
+              <input id="editLccInput" name="lccFileNo" type="text" />
+            </label>
+
+            <label>
+              <span>Series (optional)</span>
+              <input id="editSeriesInput" name="series" type="text" />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              <span>Discipler</span>
+              <select id="editDisciplerInput" name="discipler"></select>
+            </label>
+
+            <label>
+              <span>Role</span>
+              <select id="editRoleInput" name="role">
+                <option value="Disciple">Disciple</option>
+                <option value="Pastor">Pastor</option>
+                <option value="National Office">National Office</option>
+              </select>
+            </label>
+          </div>
+
+          <fieldset class="modules-fieldset">
+            <legend>Modules</legend>
+            <div id="editModuleOptions" class="module-groups"></div>
           </fieldset>
 
           <div class="form-actions">

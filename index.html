@@ -63,35 +63,95 @@
         </div>
 
         <form id="personForm" class="form-grid">
-          <label>
-            <span>Name</span>
-            <input
-              id="nameInput"
-              name="name"
-              type="text"
-              required
-              placeholder="e.g. John Doe"
-            />
-          </label>
+          <div class="form-row">
+            <label>
+              <span>Name</span>
+              <input
+                id="nameInput"
+                name="name"
+                type="text"
+                required
+                placeholder="e.g. John Doe"
+              />
+            </label>
 
-          <label>
-            <span>Discipler</span>
-            <select id="disciplerInput" name="discipler"></select>
-          </label>
+            <label>
+              <span>Address (optional)</span>
+              <input
+                name="address"
+                type="text"
+                placeholder="e.g. Santiago City"
+              />
+            </label>
+          </div>
 
-          <label>
-            <span>Disciple(s)</span>
-            <input
-              id="discipleInput"
-              name="disciple"
-              type="text"
-              placeholder="Optional. Separate multiple names with commas"
-            />
-          </label>
+          <div class="form-row">
+            <label>
+              <span>Birthday</span>
+              <input name="bday" type="date" />
+            </label>
 
-          <fieldset>
-            <legend>Modules completed</legend>
-            <div id="moduleOptions" class="module-options"></div>
+            <label>
+              <span>Age</span>
+              <input name="age" type="number" min="0" max="150" />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              <span>Civil Status</span>
+              <select name="civilStatus">
+                <option value="">Select…</option>
+                <option>Single</option>
+                <option>Married</option>
+                <option>Widowed</option>
+                <option>Separated</option>
+                <option>Engaged</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Mobile Number</span>
+              <input
+                name="mobileNumber"
+                type="tel"
+                placeholder="e.g. 0917 123 4567"
+              />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              <span>LCC File No. (optional)</span>
+              <input name="lccFileNo" type="text" />
+            </label>
+
+            <label>
+              <span>Series (optional)</span>
+              <input name="series" type="text" />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              <span>Discipler</span>
+              <select id="disciplerInput" name="discipler"></select>
+            </label>
+
+            <label>
+              <span>Disciple(s)</span>
+              <input
+                id="discipleInput"
+                name="disciple"
+                type="text"
+                placeholder="Optional. Separate multiple names with commas"
+              />
+            </label>
+          </div>
+
+          <fieldset class="modules-fieldset">
+            <legend>Modules</legend>
+            <div id="moduleOptions" class="module-groups"></div>
           </fieldset>
 
           <div class="form-actions">

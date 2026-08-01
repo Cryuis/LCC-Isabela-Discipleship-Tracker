@@ -1,12 +1,137 @@
-const moduleOptions = [
-  "Unleash Your Life",
-  "First Step",
-  "Alpha Series",
-  "Foundations",
-  "Growing Deep",
+let people = [];
+
+const SEMINAR_NAME = "Walk in the Spirit Seminar";
+
+const moduleGroups = [
+  { label: "Starter", modules: ["Alpha Series"] },
+  {
+    label: "Faithfulness",
+    modules: ["Unleash your Life", "New Beginnings", "First Step"],
+  },
+  { label: SEMINAR_NAME, modules: [SEMINAR_NAME], seminar: true },
+  {
+    label: "Fruitfulness",
+    modules: ["Walk for Jesus", "Walk with Jesus", "Walk like Jesus"],
+  },
 ];
 
-let people = [];
+function isSeminar(name) {
+  return name === SEMINAR_NAME;
+}
+
+function makeModuleField(labelText, type, dataAttr) {
+  const label = document.createElement("label");
+  const span = document.createElement("span");
+  span.textContent = labelText;
+  const input = document.createElement("input");
+  input.type = type;
+  input.setAttribute(`data-${dataAttr}`, "");
+  label.appendChild(span);
+  label.appendChild(input);
+  return label;
+}
+
+function renderModuleOptions(container) {
+  container.innerHTML = "";
+
+  moduleGroups.forEach((group) => {
+    const groupEl = document.createElement("div");
+    groupEl.className = "module-group";
+
+    const title = document.createElement("h4");
+    title.className = "module-group-title";
+    title.textContent = group.label;
+    groupEl.appendChild(title);
+
+    const itemsEl = document.createElement("div");
+    itemsEl.className = "module-group-items";
+    groupEl.appendChild(itemsEl);
+
+    group.modules.forEach((moduleName) => {
+      const item = document.createElement("div");
+      item.className = "module-group-item";
+
+      const chip = document.createElement("label");
+      chip.className = "module-chip";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = moduleName;
+
+      const span = document.createElement("span");
+      span.textContent = moduleName;
+
+      chip.appendChild(cb);
+      chip.appendChild(span);
+      item.appendChild(chip);
+
+      const dates = document.createElement("div");
+      dates.className = group.seminar
+        ? "module-dates is-seminar hidden"
+        : "module-dates hidden";
+      if (group.seminar) {
+        dates.appendChild(makeModuleField("Date Attended", "date", "attended"));
+        dates.appendChild(makeModuleField("Venue", "text", "venue"));
+        dates.appendChild(makeModuleField("Pastor", "text", "pastor"));
+      } else {
+        dates.appendChild(makeModuleField("Date Started", "date", "start"));
+        dates.appendChild(makeModuleField("Date Completed", "date", "end"));
+      }
+      item.appendChild(dates);
+
+      itemsEl.appendChild(item);
+    });
+
+    container.appendChild(groupEl);
+  });
+}
+
+function resetModuleOptions(container) {
+  container.querySelectorAll(".module-group-item").forEach((item) => {
+    const cb = item.querySelector('input[type="checkbox"]');
+    cb.checked = false;
+    const panel = item.querySelector(".module-dates");
+    panel.classList.add("hidden");
+    panel.querySelectorAll("input").forEach((input) => {
+      input.value = "";
+    });
+  });
+}
+
+function collectModules(container) {
+  const modules = {};
+  container.querySelectorAll(".module-group-item").forEach((item) => {
+    const cb = item.querySelector('input[type="checkbox"]');
+    if (!cb.checked) {
+      return;
+    }
+    const name = cb.value;
+    const panel = item.querySelector(".module-dates");
+    const entry = {};
+    if (isSeminar(name)) {
+      entry.dateAttended = panel.querySelector("[data-attended]").value;
+      entry.venue = panel.querySelector("[data-venue]").value.trim();
+      entry.pastor = panel.querySelector("[data-pastor]").value.trim();
+    } else {
+      entry.dateStarted = panel.querySelector("[data-start]").value;
+      entry.dateCompleted = panel.querySelector("[data-end]").value;
+    }
+    modules[name] = entry;
+  });
+  return modules;
+}
+
+function handleModuleToggle(event) {
+  if (!event.target.matches('input[type="checkbox"]')) {
+    return;
+  }
+  const item = event.target.closest(".module-group-item");
+  if (!item) {
+    return;
+  }
+  const panel = item.querySelector(".module-dates");
+  panel.classList.toggle("hidden", !event.target.checked);
+}
 
 async function fetchPeople() {
   const res = await fetch("/api/people");
@@ -183,10 +308,17 @@ function renderPerson(person, parent) {
 
   const modules = document.createElement("div");
   modules.className = "card-modules";
-  person.modules.forEach((moduleName) => {
+  const moduleNames = Array.isArray(person.modules)
+    ? person.modules
+    : Object.keys(person.modules || {});
+  moduleNames.forEach((moduleName) => {
     const pill = document.createElement("span");
     pill.className = "module-pill";
-    pill.textContent = moduleName;
+    const entry = !Array.isArray(person.modules)
+      ? person.modules[moduleName] || {}
+      : {};
+    const date = entry.dateCompleted || entry.dateAttended;
+    pill.textContent = date ? `${moduleName} (${date})` : moduleName;
     modules.appendChild(pill);
   });
 
@@ -227,17 +359,6 @@ function populateDisciplerOptions() {
   select.value = defaultRootName;
 }
 
-function renderModuleOptions() {
-  const container = document.getElementById("moduleOptions");
-  container.innerHTML = "";
-
-  moduleOptions.forEach((moduleName) => {
-    const label = document.createElement("label");
-    label.innerHTML = `<input type="checkbox" name="modules" value="${moduleName}" /> ${moduleName}`;
-    container.appendChild(label);
-  });
-}
-
 function openModal() {
   document.getElementById("modal").classList.remove("hidden");
 }
@@ -245,6 +366,7 @@ function openModal() {
 function closeModal() {
   document.getElementById("modal").classList.add("hidden");
   document.getElementById("personForm").reset();
+  resetModuleOptions(document.getElementById("moduleOptions"));
   populateDisciplerOptions();
 }
 
@@ -253,10 +375,33 @@ async function handleSubmit(event) {
 
   const form = event.currentTarget;
   const data = new FormData(form);
-  const selectedModules = data.getAll("modules");
   const personName = data.get("name").toString().trim();
-  const disciplerName =
-    data.get("discipler").toString().trim() || getDefaultRootName();
+
+  if (!personName) {
+    return;
+  }
+
+  const payload = {
+    name: personName,
+    address: data.get("address").toString().trim(),
+    bday: data.get("bday").toString(),
+    age: data.get("age").toString().trim(),
+    civilStatus: data.get("civilStatus").toString(),
+    mobileNumber: data.get("mobileNumber").toString().trim(),
+    lccFileNo: data.get("lccFileNo").toString().trim(),
+    series: data.get("series").toString().trim(),
+    discipler:
+      data.get("discipler").toString().trim() || getDefaultRootName(),
+    role: "Disciple",
+    modules: collectModules(document.getElementById("moduleOptions")),
+  };
+
+  await fetch("/api/people", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
   const discipleNames = data
     .get("disciple")
     .toString()
@@ -264,28 +409,16 @@ async function handleSubmit(event) {
     .map((name) => name.trim())
     .filter(Boolean);
 
-  if (!personName) {
-    return;
-  }
-
-  const payload = (name, discipler) => ({
-    name,
-    discipler,
-    role: "Disciple",
-    modules: name === personName ? selectedModules : [],
-  });
-
-  await fetch("/api/people", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload(personName, disciplerName)),
-  });
-
   for (const discipleName of discipleNames) {
     await fetch("/api/people", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload(discipleName, personName)),
+      body: JSON.stringify({
+        name: discipleName,
+        discipler: personName,
+        role: "Disciple",
+        modules: {},
+      }),
     });
   }
 
@@ -387,7 +520,10 @@ function handlePointerUp(event) {
 }
 
 async function initialize() {
-  renderModuleOptions();
+  renderModuleOptions(document.getElementById("moduleOptions"));
+  document
+    .getElementById("moduleOptions")
+    .addEventListener("change", handleModuleToggle);
   await fetchPeople();
   populateDisciplerOptions();
 

@@ -248,6 +248,7 @@ body {
   place-items: center;
   padding: 20px;
   z-index: 10;
+  overflow-y: auto;
 }
 
 .modal.hidden {
@@ -255,7 +256,9 @@ body {
 }
 
 .modal-card {
-  width: min(100%, 540px);
+  width: min(100%, 640px);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -370,6 +373,97 @@ fieldset {
   box-shadow: 0 2px 8px rgba(47, 109, 246, 0.25);
 }
 
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.modules-fieldset .module-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.module-group-title {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.module-group-items {
+  display: grid;
+  gap: 12px;
+}
+
+.module-group-item {
+  display: grid;
+  gap: 8px;
+}
+
+.module-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: #fbfcfe;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  width: fit-content;
+}
+
+.module-chip input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.module-chip:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.module-chip:has(input:checked) {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(47, 109, 246, 0.25);
+}
+
+.module-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f6f8fb;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.module-dates label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.82rem;
+}
+
+.module-dates label span {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.module-dates input {
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.module-dates.is-seminar {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -419,6 +513,12 @@ fieldset {
 }
 
 @media (max-width: 700px) {
+  .form-row,
+  .module-dates,
+  .module-dates.is-seminar {
+    grid-template-columns: 1fr;
+  }
+
   .hero {
     flex-direction: column;
   }
