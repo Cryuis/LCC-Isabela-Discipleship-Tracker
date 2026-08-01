@@ -396,11 +396,16 @@ async function handleSubmit(event) {
     modules: collectModules(document.getElementById("moduleOptions")),
   };
 
-  await fetch("/api/people", {
+  const res = await fetch("/api/people", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+
+  if (!res.ok) {
+    alert("Something went wrong. Please try again.");
+    return;
+  }
 
   const discipleNames = data
     .get("disciple")
@@ -422,6 +427,7 @@ async function handleSubmit(event) {
     });
   }
 
+  alert("Thank you! Your details have been submitted and are pending approval by the admin.");
   await fetchPeople();
   populateDisciplerOptions();
   closeModal();

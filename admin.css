@@ -160,6 +160,38 @@
   color: #b3261e;
 }
 
+.row-btn.approve:hover {
+  background: #e8f7ee;
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.status-approved {
+  background: #e8f7ee;
+  color: #16a34a;
+}
+
+.status-pending {
+  background: #fdf3e3;
+  color: #b7791f;
+}
+
+.status-declined {
+  background: #fdecec;
+  color: #b3261e;
+}
+
 @media (max-width: 700px) {
   .panel-header {
     flex-direction: column;

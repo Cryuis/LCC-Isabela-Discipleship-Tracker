@@ -100,8 +100,13 @@ function hideLoginError() {
 
 function getDefaultRootName() {
   return (
-    people.find((p) => !p.discipler && p.name !== "National Office")?.name || ""
+    approvedPeople().find((p) => !p.discipler && p.name !== "National Office")
+      ?.name || ""
   );
+}
+
+function approvedPeople() {
+  return people.filter((p) => p.status === "approved");
 }
 
 function populateDisciplerOptions(select, excludeName) {
@@ -112,7 +117,7 @@ function populateDisciplerOptions(select, excludeName) {
   empty.textContent = "Pastor / no discipler";
   select.appendChild(empty);
 
-  people.forEach((person) => {
+  approvedPeople().forEach((person) => {
     if (person.name === excludeName) {
       return;
     }
@@ -277,6 +282,33 @@ function renderTable() {
       modulesCell.textContent = "—";
     }
 
+    const statusCell = document.createElement("td");
+    const status = person.status || "approved";
+    const statusBadge = document.createElement("span");
+    statusBadge.className = `status-pill status-${status}`;
+    statusBadge.textContent = status;
+    statusCell.appendChild(statusBadge);
+    if (status === "pending") {
+      const approveBtn = document.createElement("button");
+      approveBtn.className = "row-btn approve";
+      approveBtn.textContent = "Approve";
+      approveBtn.type = "button";
+      approveBtn.addEventListener("click", () =>
+        setPersonStatus(person, "approved"),
+      );
+
+      const declineBtn = document.createElement("button");
+      declineBtn.className = "row-btn danger";
+      declineBtn.textContent = "Decline";
+      declineBtn.type = "button";
+      declineBtn.addEventListener("click", () =>
+        setPersonStatus(person, "declined"),
+      );
+
+      statusCell.appendChild(approveBtn);
+      statusCell.appendChild(declineBtn);
+    }
+
     const actionsCell = document.createElement("td");
 
     const editBtn = document.createElement("button");
@@ -298,6 +330,7 @@ function renderTable() {
     row.appendChild(roleCell);
     row.appendChild(disciplerCell);
     row.appendChild(modulesCell);
+    row.appendChild(statusCell);
     row.appendChild(actionsCell);
 
     tbody.appendChild(row);
@@ -305,7 +338,7 @@ function renderTable() {
 }
 
 async function loadPeople() {
-  const res = await api("/api/people");
+  const res = await api("/api/people/all", { headers: authHeaders() });
   people = await res.json();
   renderTable();
   populateDisciplerOptions(document.getElementById("disciplerInput"));
@@ -405,6 +438,7 @@ async function handleAddPerson(event) {
 
   const form = event.currentTarget;
   const payload = readForm(form, document.getElementById("moduleOptions"));
+  payload.status = "approved";
 
   if (!payload.name) {
     return;
@@ -450,6 +484,22 @@ async function handleSaveEdit(event) {
   }
 
   closeEditModal();
+  await loadPeople();
+}
+
+async function setPersonStatus(person, status) {
+  const res = await api(`/api/people/${person.id}/status`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify({ status }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    alert(body.error || `Failed to ${status} person`);
+    return;
+  }
+
   await loadPeople();
 }
 

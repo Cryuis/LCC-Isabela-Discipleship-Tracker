@@ -5,9 +5,9 @@
   --border: #dfe7f0;
   --text: #132033;
   --muted: #61717f;
-  --accent: #2f6df6;
-  --accent-2: #5f8dff;
-  --accent-soft: #eaf2ff;
+  --accent: #16a34a;
+  --accent-2: #22c55e;
+  --accent-soft: #e8f7ee;
 }
 
 * {
@@ -87,7 +87,7 @@ body {
   color: white;
   font-size: 1rem;
   font-weight: 600;
-  box-shadow: 0 8px 20px rgba(47, 109, 246, 0.2);
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -176,7 +176,7 @@ body {
 
 .tree-node.is-root {
   border-color: #c6d8ff;
-  box-shadow: 0 10px 24px rgba(47, 109, 246, 0.12);
+  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.12);
 }
 
 .tree-node.is-national-office {
@@ -326,7 +326,7 @@ input:focus,
 select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.15);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
 }
 
 fieldset {
@@ -370,7 +370,7 @@ fieldset {
   background: var(--accent);
   color: white;
   border-color: var(--accent);
-  box-shadow: 0 2px 8px rgba(47, 109, 246, 0.25);
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
 }
 
 .form-row {
@@ -431,7 +431,7 @@ fieldset {
   background: var(--accent);
   color: white;
   border-color: var(--accent);
-  box-shadow: 0 2px 8px rgba(47, 109, 246, 0.25);
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
 }
 
 .module-dates {
@@ -485,12 +485,12 @@ fieldset {
 
 .primary-btn:hover {
   opacity: 0.9;
-  box-shadow: 0 4px 12px rgba(47, 109, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
 }
 
 .primary-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.3);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.3);
 }
 
 .secondary-btn {
@@ -505,7 +505,7 @@ fieldset {
 
 .secondary-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.15);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
 }
 
 .icon-btn:hover {

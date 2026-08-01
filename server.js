@@ -47,6 +47,13 @@ async function seed() {
     console.log(`Seeded admin account: ${ADMIN_USERNAME}`);
   }
 
+  await db
+    .collection('people')
+    .updateMany(
+      { status: { $exists: false } },
+      { $set: { status: 'approved' } },
+    );
+
   const count = await db.collection('people').countDocuments();
   if (count === 0) {
     await db.collection('people').insertMany([
@@ -63,6 +70,7 @@ async function seed() {
         discipler: '',
         role: 'National Office',
         modules: {},
+        status: 'approved',
       },
       {
         id: crypto.randomUUID(),
@@ -77,6 +85,7 @@ async function seed() {
         discipler: 'National Office',
         role: 'Pastor',
         modules: { 'Unleash your Life': { dateStarted: '', dateCompleted: '' } },
+        status: 'approved',
       },
       {
         id: crypto.randomUUID(),
@@ -91,6 +100,7 @@ async function seed() {
         discipler: 'Melchor Cavero',
         role: 'Disciple',
         modules: { 'First Step': { dateStarted: '', dateCompleted: '' } },
+        status: 'approved',
       },
     ]);
     console.log('Seeded initial data');
@@ -181,8 +191,40 @@ app.get('/api/me', requireAdmin, (req, res) => {
 app.get('/api/people', async (_req, res) => {
   try {
     const database = await getDb();
+    const people = await database
+      .collection('people')
+      .find({ status: 'approved' })
+      .toArray();
+    res.json(people);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/people/all', requireAdmin, async (_req, res) => {
+  try {
+    const database = await getDb();
     const people = await database.collection('people').find({}).toArray();
     res.json(people);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/people/:id/status', requireAdmin, async (req, res) => {
+  try {
+    const database = await getDb();
+    const { status } = req.body;
+    if (status !== 'approved' && status !== 'declined') {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    const result = await database
+      .collection('people')
+      .updateOne({ id: req.params.id }, { $set: { status } });
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
+    res.json({ ok: true, id: req.params.id, status });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -203,6 +245,7 @@ app.post('/api/people', async (req, res) => {
       discipler,
       role,
       modules,
+      status,
     } = req.body;
     const doc = {
       id: crypto.randomUUID(),
@@ -217,6 +260,7 @@ app.post('/api/people', async (req, res) => {
       discipler: discipler || '',
       role: role || 'Disciple',
       modules: modules && typeof modules === 'object' ? modules : {},
+      status: status === 'approved' || status === 'declined' ? status : 'pending',
     };
     const result = await database.collection('people').insertOne(doc);
     res.status(201).json({ ...doc, _id: result.insertedId });
