@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Discipleship Tree Map</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Discipleship Tracker</p>
+          <h1>Build a simple tree map of your discipleship journey.</h1>
+          <p class="hero-copy">
+            Add a person, connect them to a discipler, list one or more
+            disciples, and track the modules they have completed.
+          </p>
+        </div>
+        <button
+          id="openFormBtn"
+          class="add-btn"
+          type="button"
+          aria-label="Add a new disciple"
+        >
+          +
+        </button>
+      </header>
+
+      <section class="tree-card">
+        <div class="tree-toolbar">
+          <h2>Discipleship Tree</h2>
+          <span class="tree-pill">Drag the screen to explore the tree and see connected cards easily</span>
+        </div>
+        <div id="treeCanvas" class="tree-canvas"></div>
+      </section>
+    </main>
+
+    <div
+      id="modal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalTitle"
+    >
+      <div class="modal-card">
+        <div class="modal-head">
+          <h3 id="modalTitle">Add a new person</h3>
+          <button
+            id="closeModalBtn"
+            class="icon-btn"
+            type="button"
+            aria-label="Close form"
+          >
+            ×
+          </button>
+        </div>
+
+        <form id="personForm" class="form-grid">
+          <label>
+            <span>Name</span>
+            <input
+              id="nameInput"
+              name="name"
+              type="text"
+              required
+              placeholder="e.g. John Doe"
+            />
+          </label>
+
+          <label>
+            <span>Discipler</span>
+            <select id="disciplerInput" name="discipler"></select>
+          </label>
+
+          <label>
+            <span>Disciple(s)</span>
+            <input
+              id="discipleInput"
+              name="disciple"
+              type="text"
+              placeholder="Optional. Separate multiple names with commas"
+            />
+          </label>
+
+          <fieldset>
+            <legend>Modules completed</legend>
+            <div id="moduleOptions" class="module-options"></div>
+          </fieldset>
+
+          <div class="form-actions">
+            <button id="cancelBtn" class="secondary-btn" type="button">
+              Cancel
+            </button>
+            <button class="primary-btn" type="submit">Add to Tree</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

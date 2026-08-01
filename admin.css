@@ -1,0 +1,176 @@
+.hidden {
+  display: none !important;
+}
+
+.login-view {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+}
+
+.login-card {
+  width: min(100%, 420px);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 16px 35px rgba(19, 32, 51, 0.08);
+}
+
+.login-card h1 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+}
+
+.login-copy {
+  margin: 0 0 24px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.login-error {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fdecec;
+  color: #b3261e;
+  font-size: 0.9rem;
+}
+
+.login-back {
+  margin: 20px 0 0;
+  font-size: 0.9rem;
+}
+
+.login-back a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.login-back a:hover {
+  text-decoration: underline;
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.panel-header h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+}
+
+.panel-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.panel-actions .secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  padding: 10px 18px;
+  font-size: 0.95rem;
+}
+
+.panel-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 16px 35px rgba(19, 32, 51, 0.08);
+  margin-bottom: 20px;
+}
+
+.panel-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.panel-card-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.people-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.people-table th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--border);
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.people-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.people-table tr:last-child td {
+  border-bottom: none;
+}
+
+.people-table .actions-col {
+  width: 160px;
+}
+
+.people-table .module-pill {
+  margin: 2px 4px 2px 0;
+}
+
+.row-btn {
+  border: 1px solid var(--border);
+  background: #fbfcfe;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 14px;
+  margin-right: 6px;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.row-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.row-btn.danger:hover {
+  background: #fdecec;
+  border-color: #b3261e;
+  color: #b3261e;
+}
+
+@media (max-width: 700px) {
+  .panel-header {
+    flex-direction: column;
+  }
+
+  .panel-actions {
+    width: 100%;
+  }
+
+  .panel-actions .secondary-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
