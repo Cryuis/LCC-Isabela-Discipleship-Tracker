@@ -98,24 +98,10 @@ function hideLoginError() {
   document.getElementById("loginError").classList.add("hidden");
 }
 
-function getDisciplers(person) {
-  if (Array.isArray(person.disciplers)) {
-    return person.disciplers.filter(Boolean);
-  }
-  return person.discipler ? [person.discipler] : [];
-}
-
-function getCheckedDisciplers(container) {
-  return Array.from(
-    container.querySelectorAll('input[type="checkbox"]:checked'),
-  ).map((cb) => cb.value);
-}
-
 function getDefaultRootName() {
   return (
-    approvedPeople().find(
-      (p) => getDisciplers(p).length === 0 && p.name !== "National Office",
-    )?.name || ""
+    approvedPeople().find((p) => !p.discipler && p.name !== "National Office")
+      ?.name || ""
   );
 }
 
@@ -123,28 +109,22 @@ function approvedPeople() {
   return people.filter((p) => p.status === "approved");
 }
 
-function populateDisciplerOptions(container, selected, excludeName) {
-  container.innerHTML = "";
+function populateDisciplerOptions(select, excludeName) {
+  select.innerHTML = "";
+
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = "Pastor / no discipler";
+  select.appendChild(empty);
 
   approvedPeople().forEach((person) => {
     if (person.name === excludeName) {
       return;
     }
-    const chip = document.createElement("label");
-    chip.className = "module-chip";
-
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.name = "discipler";
-    cb.value = person.name;
-    cb.checked = Array.isArray(selected) && selected.includes(person.name);
-
-    const span = document.createElement("span");
-    span.textContent = person.name;
-
-    chip.appendChild(cb);
-    chip.appendChild(span);
-    container.appendChild(chip);
+    const option = document.createElement("option");
+    option.value = person.name;
+    option.textContent = person.name;
+    select.appendChild(option);
   });
 }
 
@@ -281,10 +261,10 @@ function renderTable() {
 
     const roleCell = document.createElement("td");
     roleCell.textContent =
-      person.role || (getDisciplers(person).length ? "Disciple" : "Pastor");
+      person.role || (person.discipler ? "Disciple" : "Pastor");
 
     const disciplerCell = document.createElement("td");
-    disciplerCell.textContent = getDisciplers(person).join(", ") || "—";
+    disciplerCell.textContent = person.discipler || "—";
 
     const modulesCell = document.createElement("td");
     const personModules = normalizeModules(person.modules);
@@ -361,10 +341,8 @@ async function loadPeople() {
   const res = await api("/api/people/all", { headers: authHeaders() });
   people = await res.json();
   renderTable();
-  populateDisciplerOptions(
-    document.getElementById("disciplerOptions"),
-    [getDefaultRootName()],
-  );
+  populateDisciplerOptions(document.getElementById("disciplerInput"));
+  document.getElementById("disciplerInput").value = getDefaultRootName();
 }
 
 function openEditModal(person) {
@@ -382,12 +360,12 @@ function openEditModal(person) {
   document.getElementById("editLccInput").value = person.lccFileNo || "";
   document.getElementById("editSeriesInput").value = person.series || "";
   document.getElementById("editRoleInput").value =
-    person.role || (getDisciplers(person).length ? "Disciple" : "Pastor");
+    person.role || (person.discipler ? "Disciple" : "Pastor");
   populateDisciplerOptions(
-    document.getElementById("editDisciplerOptions"),
-    getDisciplers(person),
+    document.getElementById("editDisciplerInput"),
     person.name,
   );
+  document.getElementById("editDisciplerInput").value = person.discipler || "";
   renderModuleOptions(
     document.getElementById("editModuleOptions"),
     person.modules,
@@ -438,7 +416,7 @@ async function handleLogout() {
   showLoginView();
 }
 
-function readForm(form, moduleContainer, disciplerContainer) {
+function readForm(form, moduleContainer) {
   const data = new FormData(form);
   return {
     name: data.get("name").toString().trim(),
@@ -449,7 +427,7 @@ function readForm(form, moduleContainer, disciplerContainer) {
     mobileNumber: data.get("mobileNumber").toString().trim(),
     lccFileNo: data.get("lccFileNo").toString().trim(),
     series: data.get("series").toString().trim(),
-    disciplers: getCheckedDisciplers(disciplerContainer),
+    discipler: data.get("discipler").toString().trim(),
     role: data.get("role").toString() || "Disciple",
     modules: collectModules(moduleContainer),
   };
@@ -459,11 +437,7 @@ async function handleAddPerson(event) {
   event.preventDefault();
 
   const form = event.currentTarget;
-  const payload = readForm(
-    form,
-    document.getElementById("moduleOptions"),
-    document.getElementById("disciplerOptions"),
-  );
+  const payload = readForm(form, document.getElementById("moduleOptions"));
   payload.status = "approved";
 
   if (!payload.name) {
@@ -491,11 +465,7 @@ async function handleSaveEdit(event) {
   event.preventDefault();
 
   const form = event.currentTarget;
-  const payload = readForm(
-    form,
-    document.getElementById("editModuleOptions"),
-    document.getElementById("editDisciplerOptions"),
-  );
+  const payload = readForm(form, document.getElementById("editModuleOptions"));
 
   if (!payload.name || !editingId) {
     return;
