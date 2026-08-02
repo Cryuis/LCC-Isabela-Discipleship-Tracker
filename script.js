@@ -400,40 +400,30 @@ async function handleSubmit(event) {
       data.get("discipler").toString().trim() || getDefaultRootName(),
     role: "Disciple",
     modules: collectModules(document.getElementById("moduleOptions")),
+    disciples: data
+      .get("disciple")
+      .toString()
+      .split(",")
+      .map((name) => name.trim())
+      .filter(Boolean),
   };
 
-  const res = await fetch("/api/people", {
+  const res = await fetch("/api/people/batch", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
-    showToast("Something went wrong. Please try again.", "error");
+    const body = await res.json().catch(() => ({}));
+    showToast(
+      body.error || "Something went wrong. Please try again.",
+      "error",
+    );
     return;
   }
 
-  const discipleNames = data
-    .get("disciple")
-    .toString()
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean);
-
-  for (const discipleName of discipleNames) {
-    await fetch("/api/people", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: discipleName,
-        discipler: personName,
-        role: "Disciple",
-        modules: {},
-      }),
-    });
-  }
-
-  showToast("Thank you! Your details have been submitted and are pending approval by the admin.");
+  showToast("Successfully entered! Your details are pending approval by the admin.");
   await fetchPeople();
   populateDisciplerOptions();
   closeModal();

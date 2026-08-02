@@ -114,6 +114,35 @@ function hashPassword(password, salt) {
   return crypto.scryptSync(String(password), salt, 64).toString('hex');
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function findDuplicate(database, names, excludeId) {
+  const uniqueNames = [];
+  const seen = new Set();
+  for (const n of names) {
+    const key = String(n).toLowerCase();
+    if (!key || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    uniqueNames.push(String(n));
+  }
+
+  const filters = uniqueNames.map(
+    (n) => new RegExp(`^${escapeRegExp(n)}$`, 'i'),
+  );
+  const filter = { name: { $in: filters } };
+  if (excludeId) {
+    filter.id = { $ne: excludeId };
+  }
+  const existing = await database
+    .collection('people')
+    .findOne(filter);
+  return existing ? existing.name : null;
+}
+
 function createSession(username) {
   const issuedAt = Date.now();
   const payload = `${username}.${issuedAt}`;
@@ -301,6 +330,13 @@ app.post('/api/people', async (req, res) => {
       modules,
       status,
     } = req.body;
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+    const duplicate = await findDuplicate(database, [name]);
+    if (duplicate) {
+      return res.status(409).json({ error: `${duplicate} is already inputted` });
+    }
     const doc = {
       id: crypto.randomUUID(),
       name,
@@ -323,6 +359,91 @@ app.post('/api/people', async (req, res) => {
   }
 });
 
+app.post('/api/people/batch', async (req, res) => {
+  try {
+    const database = await getDb();
+    const {
+      name,
+      address,
+      bday,
+      age,
+      civilStatus,
+      mobileNumber,
+      lccFileNo,
+      series,
+      discipler,
+      role,
+      modules,
+      disciples = [],
+    } = req.body;
+
+    const mainName = String(name || '').trim();
+    const discipleNames = (Array.isArray(disciples) ? disciples : [])
+      .map((n) => String(n || '').trim())
+      .filter(Boolean);
+
+    if (!mainName) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+
+    const lowerNames = new Set([mainName.toLowerCase()]);
+    for (const discipleName of discipleNames) {
+      const key = discipleName.toLowerCase();
+      if (lowerNames.has(key)) {
+        return res.status(409).json({ error: `${discipleName} is already inputted` });
+      }
+      lowerNames.add(key);
+    }
+
+    const duplicate = await findDuplicate(
+      database,
+      [mainName, ...discipleNames],
+    );
+    if (duplicate) {
+      return res.status(409).json({ error: `${duplicate} is already inputted` });
+    }
+
+    const mainDoc = {
+      id: crypto.randomUUID(),
+      name: mainName,
+      address: address || '',
+      bday: bday || '',
+      age: age || '',
+      civilStatus: civilStatus || '',
+      mobileNumber: mobileNumber || '',
+      lccFileNo: lccFileNo || '',
+      series: series || '',
+      discipler: discipler || '',
+      role: role || 'Disciple',
+      modules: modules && typeof modules === 'object' ? modules : {},
+      status: 'pending',
+    };
+    await database.collection('people').insertOne(mainDoc);
+
+    for (const discipleName of discipleNames) {
+      await database.collection('people').insertOne({
+        id: crypto.randomUUID(),
+        name: discipleName,
+        address: '',
+        bday: '',
+        age: '',
+        civilStatus: '',
+        mobileNumber: '',
+        lccFileNo: '',
+        series: '',
+        discipler: mainName,
+        role: 'Disciple',
+        modules: {},
+        status: 'pending',
+      });
+    }
+
+    res.status(201).json({ ...mainDoc });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.put('/api/people/:id', requireAdmin, async (req, res) => {
   try {
     const database = await getDb();
@@ -339,6 +460,13 @@ app.put('/api/people/:id', requireAdmin, async (req, res) => {
       role,
       modules,
     } = req.body;
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+    const duplicate = await findDuplicate(database, [name], req.params.id);
+    if (duplicate) {
+      return res.status(409).json({ error: `${duplicate} is already inputted` });
+    }
     const update = {
       $set: {
         name,
