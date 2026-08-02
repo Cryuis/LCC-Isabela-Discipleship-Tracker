@@ -293,6 +293,39 @@
       </div>
     </div>
 
+    <div
+      id="deleteModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="deleteModalTitle"
+    >
+      <div class="modal-card confirm-card">
+        <div class="modal-head">
+          <h3 id="deleteModalTitle">Delete person</h3>
+          <button
+            id="closeDeleteModalBtn"
+            class="icon-btn"
+            type="button"
+            aria-label="Close delete confirmation"
+          >
+            ×
+          </button>
+        </div>
+
+        <p id="deleteModalMessage" class="confirm-copy"></p>
+
+        <div class="form-actions">
+          <button id="cancelDeleteBtn" class="secondary-btn" type="button">
+            Cancel
+          </button>
+          <button id="confirmDeleteBtn" class="danger-btn" type="button">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="toast.js"></script>
     <script src="admin.js"></script>
   </body>

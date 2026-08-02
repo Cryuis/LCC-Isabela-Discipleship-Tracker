@@ -323,8 +323,14 @@ function renderTable() {
     deleteBtn.type = "button";
     deleteBtn.addEventListener("click", () => handleDelete(person));
 
-    actionsCell.appendChild(editBtn);
-    actionsCell.appendChild(deleteBtn);
+    if (person.name === "National Office" || person.name === "Melchor Cavero") {
+      const protectedBadge = document.createElement("span");
+      protectedBadge.className = "meta-pill";
+      protectedBadge.textContent = "Protected";
+      actionsCell.appendChild(protectedBadge);
+    } else {
+      actionsCell.appendChild(deleteBtn);
+    }
 
     row.appendChild(nameCell);
     row.appendChild(roleCell);
@@ -503,16 +509,65 @@ async function setPersonStatus(person, status) {
   }
 
   await loadPeople();
-  showToast(`${person.name} was ${status}.`);
+  if (status === "declined") {
+    showToast(`Removed "${person.name}".`);
+  } else {
+    showToast(`${person.name} was approved.`);
+  }
 }
 
-async function handleDelete(person) {
+function confirmDelete(person) {
   const moduleNames = Object.keys(normalizeModules(person.modules));
   const message = moduleNames.length
     ? `Delete "${person.name}"?\nModules: ${moduleNames.join(", ")}.`
     : `Delete "${person.name}"?`;
 
-  if (!confirm(message)) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("deleteModal");
+    const messageEl = document.getElementById("deleteModalMessage");
+    const titleEl = document.getElementById("deleteModalTitle");
+    const confirmBtn = document.getElementById("confirmDeleteBtn");
+    const cancelBtn = document.getElementById("cancelDeleteBtn");
+    const closeBtn = document.getElementById("closeDeleteModalBtn");
+
+    titleEl.textContent = `Delete ${person.name}`;
+    messageEl.textContent = message;
+    modal.classList.remove("hidden");
+    confirmBtn.focus();
+
+    const finish = (result) => {
+      modal.classList.add("hidden");
+      confirmBtn.removeEventListener("click", onConfirm);
+      cancelBtn.removeEventListener("click", onCancel);
+      closeBtn.removeEventListener("click", onCancel);
+      modal.removeEventListener("click", onBackdrop);
+      resolve(result);
+    };
+
+    function onConfirm() {
+      finish(true);
+    }
+
+    function onCancel() {
+      finish(false);
+    }
+
+    function onBackdrop(event) {
+      if (event.target === modal) {
+        finish(false);
+      }
+    }
+
+    confirmBtn.addEventListener("click", onConfirm);
+    cancelBtn.addEventListener("click", onCancel);
+    closeBtn.addEventListener("click", onCancel);
+    modal.addEventListener("click", onBackdrop);
+  });
+}
+
+async function handleDelete(person) {
+  const confirmed = await confirmDelete(person);
+  if (!confirmed) {
     return;
   }
 

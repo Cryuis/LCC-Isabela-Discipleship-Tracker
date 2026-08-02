@@ -13,6 +13,7 @@ const ADMIN_SALT = process.env.ADMIN_SALT;
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const PROTECTED_NAMES = ['National Office', 'Melchor Cavero'];
 
 app.use(cors());
 app.use(express.json());
@@ -53,6 +54,8 @@ async function seed() {
       { status: { $exists: false } },
       { $set: { status: 'approved' } },
     );
+
+  await db.collection('people').deleteMany({ status: 'declined' });
 
   const count = await db.collection('people').countDocuments();
   if (count === 0) {
@@ -230,6 +233,24 @@ async function approveSubtree(database, rootName, visited = new Set()) {
   }
 }
 
+async function deleteSubtree(database, rootId, rootName, visited = new Set()) {
+  if (visited.has(rootId)) {
+    return;
+  }
+  visited.add(rootId);
+
+  const children = await database
+    .collection('people')
+    .find({ discipler: rootName, status: 'pending' })
+    .toArray();
+
+  for (const child of children) {
+    await deleteSubtree(database, child.id, child.name, visited);
+  }
+
+  await database.collection('people').deleteOne({ id: rootId });
+}
+
 app.patch('/api/people/:id/status', requireAdmin, async (req, res) => {
   try {
     const database = await getDb();
@@ -243,12 +264,19 @@ app.patch('/api/people/:id/status', requireAdmin, async (req, res) => {
     if (!person) {
       return res.status(404).json({ error: 'Person not found' });
     }
+    if (PROTECTED_NAMES.includes(person.name)) {
+      return res
+        .status(400)
+        .json({ error: 'This person cannot be declined or removed' });
+    }
     await database
       .collection('people')
       .updateOne({ id: req.params.id }, { $set: { status } });
 
     if (status === 'approved') {
       await approveSubtree(database, person.name);
+    } else if (status === 'declined') {
+      await deleteSubtree(database, person.id, person.name);
     }
     res.json({ ok: true, id: req.params.id, status });
   } catch (err) {
@@ -348,8 +376,8 @@ app.delete('/api/people/:id', requireAdmin, async (req, res) => {
     if (!person) {
       return res.status(404).json({ error: 'Person not found' });
     }
-    if (person.name === 'National Office') {
-      return res.status(400).json({ error: 'Cannot delete National Office' });
+    if (PROTECTED_NAMES.includes(person.name)) {
+      return res.status(400).json({ error: 'Cannot delete this person' });
     }
 
     const result = await database.collection('people').deleteOne({ id: req.params.id });

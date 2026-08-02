@@ -481,6 +481,38 @@ fieldset {
   border-radius: 999px;
 }
 
+.danger-btn {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  background: #b3261e;
+  color: white;
+  transition: opacity 0.15s, box-shadow 0.15s;
+}
+
+.danger-btn:hover {
+  opacity: 0.9;
+  box-shadow: 0 4px 12px rgba(179, 38, 30, 0.3);
+}
+
+.danger-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(179, 38, 30, 0.3);
+}
+
+.confirm-card {
+  width: min(100%, 460px);
+}
+
+.confirm-copy {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
 .primary-btn {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: white;
