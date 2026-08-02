@@ -211,6 +211,25 @@ app.get('/api/people/all', requireAdmin, async (_req, res) => {
   }
 });
 
+async function approveSubtree(database, rootName, visited = new Set()) {
+  if (!rootName || visited.has(rootName)) {
+    return;
+  }
+  visited.add(rootName);
+
+  const children = await database
+    .collection('people')
+    .find({ discipler: rootName, status: 'pending' })
+    .toArray();
+
+  for (const child of children) {
+    await database
+      .collection('people')
+      .updateOne({ id: child.id }, { $set: { status: 'approved' } });
+    await approveSubtree(database, child.name, visited);
+  }
+}
+
 app.patch('/api/people/:id/status', requireAdmin, async (req, res) => {
   try {
     const database = await getDb();
@@ -218,11 +237,18 @@ app.patch('/api/people/:id/status', requireAdmin, async (req, res) => {
     if (status !== 'approved' && status !== 'declined') {
       return res.status(400).json({ error: 'Invalid status' });
     }
-    const result = await database
+    const person = await database
+      .collection('people')
+      .findOne({ id: req.params.id });
+    if (!person) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
+    await database
       .collection('people')
       .updateOne({ id: req.params.id }, { $set: { status } });
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ error: 'Person not found' });
+
+    if (status === 'approved') {
+      await approveSubtree(database, person.name);
     }
     res.json({ ok: true, id: req.params.id, status });
   } catch (err) {

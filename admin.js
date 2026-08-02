@@ -452,13 +452,14 @@ async function handleAddPerson(event) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    alert(body.error || "Failed to add person");
+    showToast(body.error || "Failed to add person", "error");
     return;
   }
 
   form.reset();
   resetModuleOptions(document.getElementById("moduleOptions"));
   await loadPeople();
+  showToast("Person added successfully.");
 }
 
 async function handleSaveEdit(event) {
@@ -479,12 +480,13 @@ async function handleSaveEdit(event) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    alert(body.error || "Failed to save changes");
+    showToast(body.error || "Failed to save changes", "error");
     return;
   }
 
   closeEditModal();
   await loadPeople();
+  showToast("Changes saved successfully.");
 }
 
 async function setPersonStatus(person, status) {
@@ -496,11 +498,12 @@ async function setPersonStatus(person, status) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    alert(body.error || `Failed to ${status} person`);
+    showToast(body.error || `Failed to ${status} person`, "error");
     return;
   }
 
   await loadPeople();
+  showToast(`${person.name} was ${status}.`);
 }
 
 async function handleDelete(person) {
@@ -520,11 +523,12 @@ async function handleDelete(person) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    alert(body.error || "Failed to delete person");
+    showToast(body.error || "Failed to delete person", "error");
     return;
   }
 
   await loadPeople();
+  showToast(`Deleted "${person.name}".`);
 }
 
 async function initialize() {

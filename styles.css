@@ -516,6 +516,74 @@ fieldset {
   background: #e4e8ee;
 }
 
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 280px;
+  max-width: 380px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 14px;
+  padding: 13px 14px;
+  box-shadow: 0 12px 28px rgba(19, 32, 51, 0.16);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--text);
+  opacity: 0;
+  transform: translateX(120%);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast.hide {
+  opacity: 0;
+  transform: translateX(120%);
+}
+
+.toast-error {
+  border-left-color: #b3261e;
+}
+
+.toast-info {
+  border-left-color: #2c3e50;
+}
+
+.toast-message {
+  flex: 1;
+}
+
+.toast-close {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.toast-close:hover {
+  color: var(--text);
+}
+
 @media (max-width: 700px) {
   .form-row,
   .module-dates,

@@ -201,7 +201,13 @@ function buildTree() {
     person.children = [];
   });
 
-  const rootPeople = people.filter((person) => !person.discipler);
+  const rootPeople = people.filter((person) => {
+    if (!person.discipler) {
+      return true;
+    }
+    const parent = findPersonByName(person.discipler);
+    return !parent || parent.id === person.id;
+  });
 
   people.forEach((person) => {
     if (!person.discipler) {
@@ -209,7 +215,7 @@ function buildTree() {
     }
 
     const parent = findPersonByName(person.discipler);
-    if (parent) {
+    if (parent && parent.id !== person.id) {
       parent.children.push(person);
     }
   });
@@ -403,7 +409,7 @@ async function handleSubmit(event) {
   });
 
   if (!res.ok) {
-    alert("Something went wrong. Please try again.");
+    showToast("Something went wrong. Please try again.", "error");
     return;
   }
 
@@ -427,7 +433,7 @@ async function handleSubmit(event) {
     });
   }
 
-  alert("Thank you! Your details have been submitted and are pending approval by the admin.");
+  showToast("Thank you! Your details have been submitted and are pending approval by the admin.");
   await fetchPeople();
   populateDisciplerOptions();
   closeModal();
@@ -551,6 +557,14 @@ async function initialize() {
   canvas.addEventListener("pointerup", handlePointerUp);
   window.addEventListener("pointermove", handlePointerMove);
   window.addEventListener("pointerup", handlePointerUp);
+
+  setInterval(() => {
+    const modal = document.getElementById("modal");
+    if (interactionState || (modal && !modal.classList.contains("hidden"))) {
+      return;
+    }
+    fetchPeople().catch(() => {});
+  }, 10000);
 }
 
 initialize().catch(console.error);
